@@ -64,6 +64,8 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const videoRef = useRef<HTMLVideoElement>(null);
   const camStreamRef = useRef<MediaStream | null>(null);
   const introPlayedRef = useRef(false);
+  const ttsSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const ttsAudioCtxRef = useRef<AudioContext | null>(null);
 
   // sync state → refs
   useEffect(() => { loadingRef.current = loading; }, [loading]);
@@ -84,6 +86,20 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   };
 
   const clearAllTimers = () => { clearVAD(); clearSilenceTimer(); clearNoSpeechTimer(); };
+
+  const stopTTSAudio = () => {
+    window.speechSynthesis.cancel();
+    if (ttsSourceRef.current) {
+      try { ttsSourceRef.current.stop(); } catch {}
+      ttsSourceRef.current = null;
+    }
+    if (ttsAudioCtxRef.current) {
+      ttsAudioCtxRef.current.close().catch(() => {});
+      ttsAudioCtxRef.current = null;
+    }
+    setBotSpeaking(false);
+    botSpeakingRef.current = false;
+  };
 
   const stopRecording = () => {
     clearAllTimers();
@@ -326,7 +342,14 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
         const source = audioCtx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioCtx.destination);
-        source.onended = () => { audioCtx.close(); done(); };
+        ttsSourceRef.current = source;
+        ttsAudioCtxRef.current = audioCtx;
+        source.onended = () => {
+          ttsSourceRef.current = null;
+          ttsAudioCtxRef.current = null;
+          audioCtx.close();
+          done();
+        };
         source.start();
       })
       .catch(err => {
@@ -346,7 +369,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     speakText(INTRO[language]);
 
     const stopAll = () => {
-      window.speechSynthesis.cancel();
+      stopTTSAudio();
       stopRecording();
       camStreamRef.current?.getTracks().forEach(t => t.stop());
     };
@@ -405,7 +428,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   };
 
   const handleExit = () => {
-    window.speechSynthesis.cancel();
+    stopTTSAudio();
     stopRecording();
     camStreamRef.current?.getTracks().forEach(t => t.stop());
     sessionStorage.removeItem("interview_token");
