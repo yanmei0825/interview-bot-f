@@ -25,7 +25,8 @@ To point at a different backend:
 
 ```ts
 // lib/api.ts
-export const BACKEND_URL = "https://your-backend.vercel.app";
+export const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "https://interview-bot-b.vercel.app";
 ```
 
 ## Pages
@@ -121,4 +122,4 @@ Live per-dimension data updated after each exchange:
 npm run build
 ```
 
-Push to repo and connect to Vercel. Set `NEXT_PUBLIC_BACKEND_URL` env var to your backend URL.
+Push to repo and connect to Vercel. Set `NEXT_PUBLIC_BACKEND_URL=https://interview-bot-b.vercel.app` as an environment variable in the Vercel project settings (or leave it unset — the default fallback in `lib/api.ts` already points there).
