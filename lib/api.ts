@@ -1,4 +1,4 @@
-export const BACKEND_URL = "http://localhost:5000";
+export const BACKEND_URL = "https://interview-bot-b.vercel.app";
 export const PROJECT_ID = "AI-Interview";
 
 function url(path: string) {
