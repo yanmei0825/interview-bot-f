@@ -171,6 +171,9 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       if (transcribeRes.ok) {
         const data = await transcribeRes.json();
         userText = (data.text ?? '').trim() || '__skip__';
+      } else {
+        const errData = await transcribeRes.json().catch(() => ({}));
+        console.error('[Transcribe] server error:', transcribeRes.status, errData);
       }
 
       // send to interview
