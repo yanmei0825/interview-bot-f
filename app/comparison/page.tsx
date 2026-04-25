@@ -22,7 +22,7 @@ function ComparisonPageContent() {
 
     const fetchAnalysis = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/company/${companyId}/projects/${projectId}/comparison`);
+        const response = await fetch(`${BACKEND_URL}/companies/${companyId}/projects/${projectId}/comparison`);
         if (!response.ok) {
           throw new Error("Failed to fetch comparison analysis");
         }

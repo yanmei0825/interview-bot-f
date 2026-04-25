@@ -21,7 +21,7 @@ function CompanyReportPageContent() {
 
     const fetchReport = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/company/${companyId}/report`);
+        const response = await fetch(`${BACKEND_URL}/companies/${companyId}/report`);
         if (!response.ok) {
           throw new Error("Failed to fetch company report");
         }
