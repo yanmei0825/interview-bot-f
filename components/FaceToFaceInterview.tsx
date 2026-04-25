@@ -139,8 +139,11 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
           const session = await getSession(token);
           if (session.currentDimension) setCurrentDim(session.currentDimension);
           if (session.finished) { setFinished(true); finishedRef.current = true; }
-          if (botReply.trim()) await speakText(botReply);
-          else { setBotSpeaking(false); botSpeakingRef.current = false; afterSpeak(); }
+          if (botReply.trim()) {
+            sendingRef.current = false;
+            setLoading(false); loadingRef.current = false;
+            await speakText(botReply);
+          } else { setBotSpeaking(false); botSpeakingRef.current = false; afterSpeak(); }
         } catch (e) {
           console.error(e);
           setBotSpeaking(false); botSpeakingRef.current = false;
@@ -176,8 +179,8 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
         const data = await transcribeRes.json();
         userText = (data.text ?? '').trim() || '__skip__';
       } else {
-        const errData = await transcribeRes.json().catch(() => ({}));
-        console.error('[Transcribe] server error:', transcribeRes.status, errData);
+        // server error — treat as no speech, continue with __skip__
+        console.warn('[Transcribe] server error:', transcribeRes.status, '— treating as skip');
       }
 
       // send to interview
@@ -193,6 +196,10 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       const replyToSpeak = botReply.trim() || (finishedRef.current ? OUTRO[language] : '');
 
       if (replyToSpeak) {
+        // Clear loading before speaking so startListening isn't blocked in afterSpeak
+        sendingRef.current = false;
+        setProcessing(false);
+        setLoading(false); loadingRef.current = false;
         await speakText(replyToSpeak);
       } else {
         setBotSpeaking(false);
@@ -305,11 +312,11 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const afterSpeak = () => {
     if (finishedRef.current) {
       sessionStorage.removeItem("interview_token");
-      // give the user a moment to hear the farewell before redirecting
       setTimeout(() => { window.location.href = '/'; }, 5000);
     } else if (micEnabledRef.current) {
       setTimeout(startListening, 300);
     } else {
+      // mic is off — treat as silence, auto-advance after 10s
       setTimeout(() => submitAudio([]), NO_SPEECH_TIMEOUT);
     }
   };
@@ -548,6 +555,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
             )}
           </div>
         </div>
+
       </div>
 
       {/* ── User panel ── */}
