@@ -20,9 +20,6 @@ export interface SessionState {
   token: string;
   projectId: string;
   language: Language | null;
-  demographicsEnabled: boolean;
-  demographicsSubmitted: boolean;
-  started: boolean;
   finished: boolean;
   currentDimension: DimensionKey | null;
   turnCount: number;

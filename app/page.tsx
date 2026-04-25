@@ -1,21 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import LanguageSelect from "../components/LanguageSelect";
 import DemographicsForm from "../components/DemographicsForm";
 import FaceToFaceInterview from "../components/FaceToFaceInterview";
 import { createSession, getSession, setLanguage, submitDemographics, Language, DimensionKey } from "../lib/api";
-
+import { useEffect, useState } from "react";
 
 type Step = "lang" | "demo" | "chat" | "error";
 
 interface ChatReady {
   token: string;
   language: Language;
-  intro: string;
   initialDimension: DimensionKey;
-  initialCoverage: Record<DimensionKey, { covered: boolean; turnCount: number }>;
-  demographicsEnabled: boolean;
 }
 
 export default function Home() {
@@ -44,10 +40,19 @@ export default function Home() {
       getSession(saved)
         .then((s) => {
           if (s.finished) {
-            // completed session — start fresh
             sessionStorage.removeItem("interview_token");
             startFresh();
+          } else if (s.language) {
+            // session already in progress — resume directly
+            setToken(saved);
+            setChatReady({
+              token: saved,
+              language: s.language,
+              initialDimension: s.currentDimension ?? "D1",
+            });
+            setStep("chat");
           } else {
+            // session exists but language not yet chosen
             setToken(saved);
           }
         })
@@ -69,13 +74,7 @@ export default function Home() {
       setLang(lang);
 
       if (res.intro) {
-        setChatReady({
-          token,
-          language: lang,
-          intro: res.intro,
-          initialDimension: "D1",
-          initialCoverage: buildEmptyCoverage(),
-        } as ChatReady);
+        setChatReady({ token, language: lang, initialDimension: "D1" });
         setStep("chat");
       } else {
         setStep("demo");
@@ -92,14 +91,8 @@ export default function Home() {
     if (!token || !language) return;
     setLoading(true);
     try {
-      const res = await submitDemographics(token, data);
-      setChatReady({
-        token,
-        language,
-        intro: res.intro ?? "",
-        initialDimension: "D1",
-        initialCoverage: buildEmptyCoverage(),
-      } as ChatReady);
+      await submitDemographics(token, data);
+      setChatReady({ token, language, initialDimension: "D1" });
       setStep("chat");
     } catch (e: any) {
       setErrorMsg(e.message);
@@ -136,9 +129,4 @@ export default function Home() {
       )}
     </div>
   );
-}
-
-function buildEmptyCoverage(): Record<DimensionKey, { covered: boolean; turnCount: number }> {
-  const keys: DimensionKey[] = ["D1","D2","D3","D4","D5","D6","D7","D8","D9","D10"];
-  return Object.fromEntries(keys.map((k) => [k, { covered: false, turnCount: 0 }])) as Record<DimensionKey, { covered: boolean; turnCount: number }>;
 }

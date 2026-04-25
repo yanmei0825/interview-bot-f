@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Language } from "../lib/api";
 
 const LABELS: Record<Language, { title: string; fullName: string; department: string; position: string; submit: string; skip: string }> = {

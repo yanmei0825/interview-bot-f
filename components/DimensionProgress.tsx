@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { DimensionKey, DIMENSION_MAX_TURNS } from "../lib/api";
 
 const DIMS: { key: DimensionKey; label: string }[] = [
