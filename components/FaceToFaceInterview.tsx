@@ -443,7 +443,13 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       try {
         const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         if (videoRef.current) { videoRef.current.srcObject = s; camStreamRef.current = s; setCameraOn(true); }
-      } catch (e) { console.error('Camera:', e); }
+      } catch (e: any) {
+        if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+          setDeviceWarning('camera');
+        } else {
+          console.error('Camera:', e);
+        }
+      }
     }
   };
 
@@ -474,6 +480,37 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-screen overflow-hidden bg-black">
+
+      {/* ── Device warning modal ── */}
+      {deviceWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#1c1c2e] border border-white/10 rounded-2xl p-6 max-w-sm w-full mx-4 text-center shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+            </div>
+            <p className="text-white font-semibold mb-2">
+              {deviceWarning === 'mic'
+                ? { en: 'No microphone found', ru: 'Микрофон не найден', tr: 'Mikrofon bulunamadı' }[language]
+                : { en: 'No camera found', ru: 'Камера не найдена', tr: 'Kamera bulunamadı' }[language]
+              }
+            </p>
+            <p className="text-white/50 text-sm mb-5">
+              {deviceWarning === 'mic'
+                ? { en: 'Please connect a microphone and try again.', ru: 'Подключи микрофон и попробуй снова.', tr: 'Lütfen bir mikrofon bağla ve tekrar dene.' }[language]
+                : { en: 'Please connect a camera and try again.', ru: 'Подключи камеру и попробуй снова.', tr: 'Lütfen bir kamera bağla ve tekrar dene.' }[language]
+              }
+            </p>
+            <button
+              onClick={() => setDeviceWarning(null)}
+              className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-all"
+            >
+              { { en: 'OK', ru: 'Понятно', tr: 'Tamam' }[language] }
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Bot panel ── */}
       <div className="relative w-full md:w-1/2 h-1/2 md:h-full bg-black overflow-hidden flex flex-col items-center justify-center py-6 px-4">
