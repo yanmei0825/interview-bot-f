@@ -130,7 +130,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
         setBotSpeaking(true); botSpeakingRef.current = true;
         try {
           let botReply = '';
-          await sendMessageStream(token, 'skip', chunk => { botReply += chunk; });
+          await sendMessageStream(token, '__skip__', chunk => { botReply += chunk; });
           setBotMessage(botReply);
           const session = await getSession(token);
           if (session.currentDimension) setCurrentDim(session.currentDimension);
@@ -167,10 +167,10 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
         body: arrayBuffer,
       });
 
-      let userText = 'skip';
+      let userText = '__skip__';
       if (transcribeRes.ok) {
         const data = await transcribeRes.json();
-        userText = (data.text ?? '').trim() || 'skip';
+        userText = (data.text ?? '').trim() || '__skip__';
       }
 
       // send to interview
@@ -233,8 +233,13 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       const source = ctx.createMediaStreamSource(stream);
       source.connect(analyser);
 
-      // MediaRecorder
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      // MediaRecorder — use opus if supported, fall back to browser default
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
+      const recorder = new MediaRecorder(stream, ...(mimeType ? [{ mimeType }] : []));
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
@@ -281,7 +286,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       }, VAD_INTERVAL);
 
     } catch (err) {
-      console.error('Mic error:', err);
+      console.error('Mic/recording setup error:', err);
       setIsRecording(false);
     }
   };
