@@ -267,7 +267,8 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       // 10s no-speech → skip
       noSpeechTimerRef.current = setTimeout(() => {
         if (!speechDetectedRef.current && !sendingRef.current) {
-          manualStopRef.current = true; // suppress onstop transcription
+          // Detach onstop before stopping so it doesn't trigger transcription
+          if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
           stopRecording();
           submitAudio([]); // send __skip__ directly
         }
@@ -402,11 +403,10 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       // just stop recording — interview continues, bot still speaks
       setMicrophoneEnabled(false);
       micEnabledRef.current = false;
-      manualStopRef.current = true; // prevent transcription on this stop
+      if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null; // don't transcribe on manual stop
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
-      }
-      if (micStreamRef.current) {
+      }      if (micStreamRef.current) {
         micStreamRef.current.getTracks().forEach(t => t.stop());
         micStreamRef.current = null;
       }
@@ -454,7 +454,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   };
 
   const handleExit = () => {
-    manualStopRef.current = true;
+    if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
     stopTTSAudio();
     stopRecording();
     camStreamRef.current?.getTracks().forEach(t => t.stop());
