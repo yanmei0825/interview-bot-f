@@ -77,57 +77,51 @@ export interface StreamResult {
   finished: boolean;
 }
 
-export function sendMessageStream(
+export async function sendMessageStream(
   token: string,
   message: string,
   onChunk: (chunk: string) => void
 ): Promise<StreamResult> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await fetch(url(`/survey/${token}/message/stream`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      });
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        return reject(new Error(d.error ?? "Server error"));
-      }
-
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let result: StreamResult = { dimension: null, finished: false };
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.chunk) onChunk(data.chunk);
-            if (data.done) {
-              result = {
-                dimension: data.dimension ?? null,
-                finished: data.finished ?? false,
-              };
-            }
-          } catch {}
-        }
-      }
-
-      resolve(result);
-    } catch (err) {
-      reject(err);
-    }
+  const res = await fetch(url(`/survey/${token}/message/stream`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
   });
+
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error ?? "Server error");
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: StreamResult = { dimension: null, finished: false };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const data = JSON.parse(line.slice(6));
+        if (data.chunk) onChunk(data.chunk);
+        if (data.done) {
+          result = {
+            dimension: data.dimension ?? null,
+            finished: data.finished ?? false,
+          };
+        }
+      } catch {}
+    }
+  }
+
+  return result;
 }
 
 export async function getSession(token: string): Promise<SessionState> {

@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DimensionKey, Language, sendMessageStream, getSession, BACKEND_URL } from '../lib/api';
 
-const BACKEND = BACKEND_URL;
-
 interface Props {
   token: string;
   language: Language;
@@ -16,6 +14,20 @@ const SILENCE_THRESHOLD = 0.008;   // RMS below this = silence
 const SILENCE_AFTER_SPEECH = 2000; // ms of silence after speech → submit
 const NO_SPEECH_TIMEOUT = 10000;   // ms with no speech at all → skip
 const VAD_INTERVAL = 100;          // ms between RMS checks
+
+const LANG_CODE: Record<Language, string> = { en: 'en-US', ru: 'ru-RU', tr: 'tr-TR' };
+
+const INTRO: Record<Language, string> = {
+  en: "Hey — thanks for taking the time. This is a short anonymous conversation about your work experience. No right or wrong answers, just your honest take. Ready to start?",
+  ru: "Привет — спасибо, что нашёл время. Это короткий анонимный разговор о твоём рабочем опыте. Нет правильных или неправильных ответов — только твой честный взгляд. Готов начать?",
+  tr: "Merhaba — zaman ayırdığın için teşekkürler. Bu, iş deneyimin hakkında kısa ve anonim bir konuşma. Doğru ya da yanlış cevap yok — sadece dürüst görüşün. Başlamaya hazır mısın?",
+};
+
+const OUTRO: Record<Language, string> = {
+  en: "That's everything — thank you so much for your time and for sharing so openly. It was a pleasure speaking with you. Take care, and goodbye!",
+  ru: "Это всё — большое спасибо за твоё время и за то, что так открыто поделился. Было приятно пообщаться. Береги себя, до свидания!",
+  tr: "Hepsi bu kadar — zaman ayırdığın ve bu kadar açık paylaştığın için çok teşekkür ederim. Seninle konuşmak bir zevkti. Kendine iyi bak, güle güle!",
+};
 
 export default function FaceToFaceInterview({ token, language, initialDimension }: Props) {
   const [loading, setLoading] = useState(false);
@@ -71,10 +83,10 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     if (noSpeechTimerRef.current) { clearTimeout(noSpeechTimerRef.current); noSpeechTimerRef.current = null; }
   };
 
+  const clearAllTimers = () => { clearVAD(); clearSilenceTimer(); clearNoSpeechTimer(); };
+
   const stopRecording = () => {
-    clearVAD();
-    clearSilenceTimer();
-    clearNoSpeechTimer();
+    clearAllTimers();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -133,7 +145,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
       // transcribe via backend Whisper
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const transcribeRes = await fetch(`${BACKEND}/survey/${token}/voice/transcribe`, {
+      const transcribeRes = await fetch(`${BACKEND_URL}/survey/${token}/voice/transcribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'audio/webm' },
         body: arrayBuffer,
@@ -260,12 +272,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
   // ─── speakText ───────────────────────────────────────────────────────────────
 
-  const OUTRO: Record<Language, string> = {
-    en: "That's everything — thank you so much for your time and for sharing so openly. It was a pleasure speaking with you. Take care, and goodbye!",
-    ru: "Это всё — большое спасибо за твоё время и за то, что так открыто поделился. Было приятно пообщаться. Береги себя, до свидания!",
-    tr: "Hepsi bu kadar — zaman ayırdığın ve bu kadar açık paylaştığın için çok teşekkür ederim. Seninle konuşmak bir zevkti. Kendine iyi bak, güle güle!",
-  };
-
   const afterSpeak = () => {
     if (finishedRef.current) {
       sessionStorage.removeItem("interview_token");
@@ -279,7 +285,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
   const speakWithBrowser = (text: string, resolve: () => void) => {
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = language === 'ru' ? 'ru-RU' : language === 'tr' ? 'tr-TR' : 'en-US';
+    u.lang = LANG_CODE[language];
     u.rate = 1.0;
     const done = () => {
       setBotSpeaking(false); botSpeakingRef.current = false;
@@ -305,7 +311,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     };
 
     // Try server TTS first, fall back to browser
-    fetch(`${BACKEND}/survey/${token}/voice/speak/stream`, {
+    fetch(`${BACKEND_URL}/survey/${token}/voice/speak/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, speed: 1.0, voiceGender: language === 'ru' ? 'female' : 'male' }),
@@ -334,17 +340,9 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     if (introPlayedRef.current) return;
     introPlayedRef.current = true;
 
-    const intros: Record<Language, string> = {
-      en: "Hey — thanks for taking the time. This is a short anonymous conversation about your work experience. No right or wrong answers, just your honest take. Ready to start?",
-      ru: "Привет — спасибо, что нашёл время. Это короткий анонимный разговор о твоём рабочем опыте. Нет правильных или неправильных ответов — только твой честный взгляд. Готов начать?",
-      tr: "Merhaba — zaman ayırdığın için teşekkürler. Bu, iş deneyimin hakkında kısa ve anonim bir konuşma. Doğru ya da yanlış cevap yok — sadece dürüst görüşün. Başlamaya hazır mısın?"
-    };
-
-    // Just play the intro — mic stays OFF until user presses the button
-    const intro = intros[language];
-    setBotMessage(intro);
+    setBotMessage(INTRO[language]);
     window.speechSynthesis.cancel();
-    speakText(intro);
+    speakText(INTRO[language]);
 
     const stopAll = () => {
       window.speechSynthesis.cancel();
@@ -379,9 +377,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
         audioCtxRef.current = null;
         analyserRef.current = null;
       }
-      clearVAD();
-      clearSilenceTimer();
-      clearNoSpeechTimer();
+      clearAllTimers();
       setIsRecording(false);
     } else {
       navigator.mediaDevices.getUserMedia({ audio: true })
@@ -413,28 +409,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     camStreamRef.current?.getTracks().forEach(t => t.stop());
     sessionStorage.removeItem("interview_token");
     window.location.href = '/';
-  };
-
-  const sendTextFallback = (text: string) => {
-    if (!text.trim() || loadingRef.current || finishedRef.current) return;
-    stopRecording();
-    sendingRef.current = true;
-    setLoading(true); loadingRef.current = true;
-    setBotSpeaking(true); botSpeakingRef.current = true;
-
-    (async () => {
-      try {
-        let botReply = '';
-        await sendMessageStream(token, text, c => { botReply += c; });
-        setBotMessage(botReply);
-        const session = await getSession(token);
-        if (session.currentDimension) setCurrentDim(session.currentDimension);
-        if (session.finished) { setFinished(true); finishedRef.current = true; }
-        if (botReply.trim()) await speakText(botReply);
-        else { setBotSpeaking(false); botSpeakingRef.current = false; if (!finishedRef.current) setTimeout(startListening, 300); }
-      } catch (e) { console.error(e); setBotSpeaking(false); botSpeakingRef.current = false; }
-      finally { sendingRef.current = false; setLoading(false); loadingRef.current = false; }
-    })();
   };
 
 
