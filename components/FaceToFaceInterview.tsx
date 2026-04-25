@@ -275,7 +275,8 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const afterSpeak = () => {
     if (finishedRef.current) {
       sessionStorage.removeItem("interview_token");
-      setTimeout(() => { window.location.href = '/'; }, 3000);
+      // give the user a moment to hear the farewell before redirecting
+      setTimeout(() => { window.location.href = '/'; }, 5000);
     } else if (micEnabledRef.current) {
       setTimeout(startListening, 300);
     } else {
@@ -413,6 +414,19 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
 
   // ─── render ──────────────────────────────────────────────────────────────────
+
+  if (finished && !botSpeaking) {
+    const thanks = {
+      en: "Thank you for your time.",
+      ru: "Спасибо за уделённое время.",
+      tr: "Zaman ayırdığın için teşekkürler.",
+    }[language];
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-black">
+        <p className="text-white/60 text-lg">{thanks}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row h-screen w-screen overflow-hidden bg-black">
