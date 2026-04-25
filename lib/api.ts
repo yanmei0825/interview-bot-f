@@ -11,11 +11,6 @@ export type DimensionKey =
   | "D1" | "D2" | "D3" | "D4" | "D5"
   | "D6" | "D7" | "D8" | "D9" | "D10";
 
-export const DIMENSION_MAX_TURNS: Record<DimensionKey, number> = {
-  D1: 5, D2: 5, D3: 5, D4: 5, D5: 5,
-  D6: 5, D7: 5, D8: 5, D9: 5, D10: 5,
-};
-
 export interface SessionState {
   token: string;
   projectId: string;

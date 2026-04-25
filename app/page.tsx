@@ -3,7 +3,7 @@
 import LanguageSelect from "../components/LanguageSelect";
 import DemographicsForm from "../components/DemographicsForm";
 import FaceToFaceInterview from "../components/FaceToFaceInterview";
-import { createSession, getSession, setLanguage, submitDemographics, Language, DimensionKey } from "../lib/api";
+import { createSession, getSession, setLanguage, submitDemographics, Language, type DimensionKey } from "../lib/api";
 import { useEffect, useState } from "react";
 
 type Step = "lang" | "demo" | "chat" | "error";
