@@ -26,7 +26,7 @@ export default function Home() {
     const startFresh = () =>
       createSession()
         .then((r) => {
-          sessionStorage.setItem("interview_token", r.token);
+          try { sessionStorage.setItem("interview_token", r.token); } catch {}
           setToken(r.token);
         })
         .catch((e) => {
@@ -34,7 +34,8 @@ export default function Home() {
           setStep("error");
         });
 
-    const saved = sessionStorage.getItem("interview_token");
+    let saved: string | null = null;
+    try { saved = sessionStorage.getItem("interview_token"); } catch {}
     if (saved) {
       // Verify the saved token still exists on the backend
       getSession(saved)
@@ -103,7 +104,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+    <div className="min-h-screen bg-[#0a0a12] flex flex-col">
       {step !== "chat" && (
         <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
           {step === "lang" && (

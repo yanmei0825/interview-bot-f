@@ -1,4 +1,6 @@
-export const BACKEND_URL = "https://interview-bot-b.vercel.app";
+export const BACKEND_URL =
+  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_BACKEND_URL) ||
+  "http://localhost:5000";
 export const PROJECT_ID = "AI-Interview";
 
 function url(path: string) {
@@ -18,7 +20,8 @@ export interface SessionState {
   finished: boolean;
   currentDimension: DimensionKey | null;
   turnCount: number;
-  coverage: Record<DimensionKey, { covered: boolean; turnCount: number }>;
+  coverage: Record<DimensionKey, { covered: boolean; turnCount: number; depthLevel: number; coverageScore: number; signals: string[] }>;
+  painLockDim: DimensionKey | null;
 }
 
 export async function createSession(): Promise<{ token: string }> {
@@ -112,8 +115,9 @@ export async function sendMessageStream(
             finished: data.finished ?? false,
           };
         }
-      } catch {}
-    }
+      } catch (e) {
+        console.warn("[SSE] Failed to parse line:", line, e);
+      }    }
   }
 
   return result;

@@ -44,15 +44,16 @@ export default function DemographicsForm({ language, onSubmit, loading }: Props)
             type="text"
             placeholder={t[field]}
             value={form[field]}
+            maxLength={100}
             onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
-            className="w-full bg-[#141414] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-white/30 transition text-sm"
+            className="w-full bg-[#13131f] border border-white/8 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition text-sm"
           />
         ))}
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 w-full py-3 rounded-xl bg-[#222] hover:bg-[#2e2e2e] text-white font-medium transition disabled:opacity-50"
+          className="mt-2 w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition disabled:opacity-50"
         >
           {t.submit}
         </button>
