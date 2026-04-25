@@ -810,74 +810,37 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
           <div className="flex flex-col flex-1 overflow-hidden mx-4 mb-3 rounded-2xl border border-white/8 bg-[#13131f]">
 
           {/* ── D1–D10 stepper ── */}
-          <div className="shrink-0 px-3 py-3 border-b border-white/8">
-            {/* Mobile: 2 rows of 5. Desktop: single row */}
-            <div className="hidden sm:block relative">
-              {/* track */}
-              <div className="absolute left-4 right-4 top-[18px] h-0.5 bg-white/8 z-0" />
-              <div className="absolute left-4 top-[18px] h-0.5 bg-green-400 transition-all duration-500 z-0"
-                style={{ width: currentIdx === 0 ? 0 : `calc(${(currentIdx / 9) * 100}% - 8px)` }} />
-              <div className="flex items-start justify-between">
-                {ALL_DIMS.map((dim, idx) => {
-                  const isActive = dim === currentDim;
-                  const isDone = idx < currentIdx;
-                  const cov = coverage?.[dim];
-                  const score = cov ? Math.round(cov.coverageScore * 100) : 0;
-                  return (
-                    <div key={dim} className="relative flex flex-col items-center flex-1">
-                      <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                        isActive ? 'bg-indigo-600 border-indigo-600 shadow-[0_0_0_3px_rgba(99,102,241,0.25)]'
-                        : isDone ? 'bg-green-500 border-green-500'
-                        : 'bg-white/5 border-white/15'
-                      }`}>
-                        {isDone ? <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                          : <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-white/30'}`}>{dim.replace('D','')}</span>}
-                      </div>
-                      <div className="mt-1.5 text-center">
-                        <p className={`text-[10px] font-semibold leading-none ${isActive ? 'text-indigo-400' : isDone ? 'text-white/55' : 'text-white/25'}`}>{dim}</p>
-                        <p className={`text-[9px] mt-0.5 leading-none ${isActive ? 'text-indigo-300/80' : isDone ? 'text-white/35' : 'text-white/18'}`}>{DIM_LABELS[dim][language]}</p>
-                        {isDone && cov && (
-                          <div className="mt-1 w-8 mx-auto h-0.5 rounded-full bg-white/8 overflow-hidden">
-                            <div className={`h-full rounded-full ${score >= 70 ? 'bg-green-400' : score >= 40 ? 'bg-amber-400' : 'bg-white/25'}`} style={{ width: `${score}%` }} />
-                          </div>
-                        )}
-                      </div>
+          <div className="shrink-0 px-4 py-3 border-b border-white/8">
+            {/* Compact single row — dots only, no overflow */}
+            <div className="relative flex items-center justify-between">
+              {/* background track */}
+              <div className="absolute inset-x-0 top-[14px] h-0.5 bg-white/8 z-0" />
+              {/* filled track */}
+              <div className="absolute left-0 top-[14px] h-0.5 bg-green-400 transition-all duration-500 z-0"
+                style={{ width: currentIdx === 0 ? 0 : `${(currentIdx / 9) * 100}%` }} />
+              {ALL_DIMS.map((dim, idx) => {
+                const isActive = dim === currentDim;
+                const isDone = idx < currentIdx;
+                return (
+                  <div key={dim} className="relative z-10 flex flex-col items-center">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                      isActive ? 'bg-indigo-600 border-indigo-600 shadow-[0_0_0_3px_rgba(99,102,241,0.25)]'
+                      : isDone ? 'bg-green-500 border-green-500'
+                      : 'bg-[#13131f] border-white/15'
+                    }`}>
+                      {isDone
+                        ? <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        : <span className={`text-[10px] font-bold ${isActive ? 'text-white' : 'text-white/30'}`}>{idx + 1}</span>
+                      }
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* Mobile: 2 rows of 5 */}
-            <div className="sm:hidden flex flex-col gap-3">
-              {[ALL_DIMS.slice(0, 5), ALL_DIMS.slice(5)].map((row, rowIdx) => (
-                <div key={rowIdx} className="relative flex items-start justify-between">
-                  <div className="absolute left-4 right-4 top-[16px] h-0.5 bg-white/8 z-0" />
-                  {row.map((dim, idx) => {
-                    const globalIdx = rowIdx * 5 + idx;
-                    const isActive = dim === currentDim;
-                    const isDone = globalIdx < currentIdx;
-                    const cov = coverage?.[dim];
-                    const score = cov ? Math.round(cov.coverageScore * 100) : 0;
-                    return (
-                      <div key={dim} className="relative flex flex-col items-center flex-1">
-                        <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
-                          isActive ? 'bg-indigo-600 border-indigo-600 shadow-[0_0_0_3px_rgba(99,102,241,0.25)]'
-                          : isDone ? 'bg-green-500 border-green-500'
-                          : 'bg-white/5 border-white/15'
-                        }`}>
-                          {isDone ? <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            : <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-white/30'}`}>{dim.replace('D','')}</span>}
-                        </div>
-                        <div className="mt-1 text-center">
-                          <p className={`text-[10px] font-semibold leading-none ${isActive ? 'text-indigo-400' : isDone ? 'text-white/55' : 'text-white/25'}`}>{dim}</p>
-                          <p className={`text-[9px] mt-0.5 leading-none ${isActive ? 'text-indigo-300/80' : isDone ? 'text-white/35' : 'text-white/18'}`}>{DIM_LABELS[dim][language]}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+            {/* Active dim label below */}
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <span className="text-[10px] text-white/30">{currentIdx + 1}/10</span>
+              <span className="text-[11px] font-semibold text-indigo-400">{currentDim} · {DIM_LABELS[currentDim][language]}</span>
             </div>
           </div>
 
