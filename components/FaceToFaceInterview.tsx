@@ -320,7 +320,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       .then(async res => {
         if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
         const arrayBuffer = await res.arrayBuffer();
-        if (arrayBuffer.byteLength <= 1000) throw new Error('Mock/empty audio');
+        if (arrayBuffer.byteLength <= 1000) throw new Error('Empty audio');
         const audioCtx = new AudioContext();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         const source = audioCtx.createBufferSource();
