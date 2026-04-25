@@ -66,6 +66,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const introPlayedRef = useRef(false);
   const ttsSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const ttsAudioCtxRef = useRef<AudioContext | null>(null);
+  const manualStopRef = useRef(false); // true when mic toggled off manually — skip transcription
 
   // sync state → refs
   useEffect(() => { loadingRef.current = loading; }, [loading]);
@@ -122,6 +123,8 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
   const submitAudio = async (chunks: Blob[]) => {
     if (sendingRef.current || loadingRef.current || finishedRef.current) return;
+    // mic was toggled off manually — don't transcribe or skip, just stop
+    if (manualStopRef.current) { manualStopRef.current = false; return; }
     if (chunks.length === 0) {
       // no speech detected — skip silently, use 'skip' as the answer
       if (!finishedRef.current) {
@@ -263,8 +266,9 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       // 10s no-speech → skip
       noSpeechTimerRef.current = setTimeout(() => {
         if (!speechDetectedRef.current && !sendingRef.current) {
+          manualStopRef.current = true; // suppress onstop transcription
           stopRecording();
-          submitAudio([]); // empty → skip
+          submitAudio([]); // send __skip__ directly
         }
       }, NO_SPEECH_TIMEOUT);
 
@@ -397,6 +401,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       // just stop recording — interview continues, bot still speaks
       setMicrophoneEnabled(false);
       micEnabledRef.current = false;
+      manualStopRef.current = true; // prevent transcription on this stop
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
@@ -436,6 +441,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   };
 
   const handleExit = () => {
+    manualStopRef.current = true;
     stopTTSAudio();
     stopRecording();
     camStreamRef.current?.getTracks().forEach(t => t.stop());
