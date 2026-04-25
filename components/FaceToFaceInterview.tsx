@@ -39,6 +39,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const [botMessage, setBotMessage] = useState('');
   const [cameraOn, setCameraOn] = useState(false);
   const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
+  const [deviceWarning, setDeviceWarning] = useState<'mic' | 'camera' | null>(null);
 
   // always-current refs
   const loadingRef = useRef(false);
@@ -424,7 +425,13 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
           if (!botSpeakingRef.current && !loadingRef.current && !finishedRef.current)
             setTimeout(startListening, 100);
         })
-        .catch(err => console.error('Mic denied:', err));
+        .catch(err => {
+          if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            setDeviceWarning('mic');
+          } else {
+            console.error('Mic denied:', err);
+          }
+        });
     }
   };
 
