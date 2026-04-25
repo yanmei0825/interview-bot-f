@@ -1,6 +1,6 @@
 export const BACKEND_URL =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_BACKEND_URL) ||
-  "http://localhost:5000";
+  "https://interview-bot-b.vercel.app";
 export const PROJECT_ID = "AI-Interview";
 
 function url(path: string) {
@@ -20,8 +20,7 @@ export interface SessionState {
   finished: boolean;
   currentDimension: DimensionKey | null;
   turnCount: number;
-  coverage: Record<DimensionKey, { covered: boolean; turnCount: number; depthLevel: number; coverageScore: number; signals: string[] }>;
-  painLockDim: DimensionKey | null;
+  coverage: Record<DimensionKey, { covered: boolean; turnCount: number }>;
 }
 
 export async function createSession(): Promise<{ token: string }> {
