@@ -20,7 +20,8 @@ export interface SessionState {
   finished: boolean;
   currentDimension: DimensionKey | null;
   turnCount: number;
-  coverage: Record<DimensionKey, { covered: boolean; turnCount: number }>;
+  coverage: Record<DimensionKey, { covered: boolean; turnCount: number; depthLevel: number; coverageScore: number; signals: string[] }>;
+  painLockDim: DimensionKey | null;
 }
 
 export async function createSession(): Promise<{ token: string }> {
