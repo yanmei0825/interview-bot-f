@@ -4,9 +4,8 @@ import React, { useEffect, useState } from "react";
 import LanguageSelect from "../components/LanguageSelect";
 import DemographicsForm from "../components/DemographicsForm";
 import FaceToFaceInterview from "../components/FaceToFaceInterview";
-import { createSession, setLanguage, submitDemographics, Language, DimensionKey } from "../lib/api";
+import { createSession, getSession, setLanguage, submitDemographics, Language, DimensionKey } from "../lib/api";
 
-const PROJECT_ID = "AI-Interview";
 
 type Step = "lang" | "demo" | "chat" | "error";
 
@@ -28,17 +27,38 @@ export default function Home() {
   const [chatReady, setChatReady] = useState<ChatReady | null>(null);
 
   useEffect(() => {
-    if (!PROJECT_ID) {
-      setErrorMsg("PROJECT_ID is not configured");
-      setStep("error");
-      return;
+    const startFresh = () =>
+      createSession()
+        .then((r) => {
+          sessionStorage.setItem("interview_token", r.token);
+          setToken(r.token);
+        })
+        .catch((e) => {
+          setErrorMsg(e.message);
+          setStep("error");
+        });
+
+    const saved = sessionStorage.getItem("interview_token");
+    if (saved) {
+      // Verify the saved token still exists on the backend
+      getSession(saved)
+        .then((s) => {
+          if (s.finished) {
+            // completed session — start fresh
+            sessionStorage.removeItem("interview_token");
+            startFresh();
+          } else {
+            setToken(saved);
+          }
+        })
+        .catch(() => {
+          // token no longer valid — start fresh
+          sessionStorage.removeItem("interview_token");
+          startFresh();
+        });
+    } else {
+      startFresh();
     }
-    createSession(PROJECT_ID)
-      .then((r) => setToken(r.token))
-      .catch((e) => {
-        setErrorMsg(e.message);
-        setStep("error");
-      });
   }, []);
 
   const handleLanguage = async (lang: Language) => {

@@ -268,6 +268,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
   const afterSpeak = () => {
     if (finishedRef.current) {
+      sessionStorage.removeItem("interview_token");
       setTimeout(() => { window.location.href = '/'; }, 3000);
     } else if (micEnabledRef.current) {
       setTimeout(startListening, 300);
@@ -410,6 +411,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     window.speechSynthesis.cancel();
     stopRecording();
     camStreamRef.current?.getTracks().forEach(t => t.stop());
+    sessionStorage.removeItem("interview_token");
     window.location.href = '/';
   };
 

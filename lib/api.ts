@@ -1,8 +1,8 @@
 export const BACKEND_URL = "http://localhost:5000";
-const BASE = BACKEND_URL;
+export const PROJECT_ID = "AI-Interview";
 
 function url(path: string) {
-  return `${BASE}${path}`;
+  return `${BACKEND_URL}${path}`;
 }
 
 export type Language = "ru" | "en" | "tr";
@@ -29,11 +29,11 @@ export interface SessionState {
   coverage: Record<DimensionKey, { covered: boolean; turnCount: number }>;
 }
 
-export async function createSession(projectId: string): Promise<{ token: string }> {
+export async function createSession(): Promise<{ token: string }> {
   const res = await fetch(url("/survey/public-session"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectId }),
+    body: JSON.stringify({ projectId: PROJECT_ID }),
   });
   if (!res.ok) {
     const d = await res.json().catch(() => ({}));
