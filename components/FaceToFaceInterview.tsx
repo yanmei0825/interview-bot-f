@@ -733,9 +733,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
               }
             </svg>
           </button>
-          <button className="w-9 h-9 rounded-xl bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/12 transition-all">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-          </button>
         </div>
       </header>
 
