@@ -845,7 +845,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
           </div>
 
           {/* ── Chat area ── */}
-          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
+          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5 cursor-default" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
             {messages.map((msg, i) => (
               <div key={i} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
 
@@ -938,9 +938,9 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
               </button>
               {/* Waveform / placeholder */}
               {isRecording
-                ? <div className="flex-1 flex items-center gap-0.5 h-5">
-                    {Array.from({ length: 24 }).map((_, i) => (
-                      <div key={i} className="w-0.5 bg-indigo-400 rounded-full animate-pulse" style={{ height: `${Math.random() * 14 + 4}px`, animationDelay: `${i * 0.05}s` }} />
+                ? <div className="flex-1 flex items-center gap-0.5 h-5 pointer-events-none">
+                    {[12,6,14,8,16,5,13,9,15,7,11,6,14,8,16,5,13,9,15,7,11,6,14,8].map((h, i) => (
+                      <div key={i} className="w-0.5 bg-indigo-400 rounded-full animate-pulse" style={{ height: `${h}px`, animationDelay: `${i * 0.05}s` }} />
                     ))}
                   </div>
                 : <input
@@ -949,7 +949,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
                     onChange={e => setTextInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendText()}
                     placeholder={({ en: 'Type your answer or press the mic', ru: 'Напишите ответ или нажмите на микрофон', tr: 'Cevabınızı yazın veya mikrofona basın' } as Record<Language,string>)[language]}
-                    className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/30 outline-none"
+                    className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/30 outline-none cursor-text"
                   />
               }
               {/* Send */}
