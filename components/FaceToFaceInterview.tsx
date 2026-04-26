@@ -603,7 +603,12 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
       if (session.currentDimension) setCurrentDim(session.currentDimension);
       if (session.coverage) setCoverage(session.coverage);
       setPainLockDim(session.painLockDim ?? null);
-      if (session.finished) { setFinished(true); finishedRef.current = true; }
+      if (session.finished) {
+        setFinished(true); finishedRef.current = true;
+      } else {
+        if (redirectTimerRef.current) { clearTimeout(redirectTimerRef.current); redirectTimerRef.current = null; }
+        setFinished(false); finishedRef.current = false;
+      }
       if (botReply.trim()) {
         setBotMessage(botReply);
         setMessages(m => [...m, { role: 'bot', text: botReply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
@@ -970,7 +975,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
             <p className="text-sm font-bold text-white/90">
               {({ en: 'Interview progress', ru: 'Ход интервью', tr: 'Mülakat ilerlemesi' } as Record<Language,string>)[language]}
             </p>
-            <button className="w-6 h-6 rounded-full bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/12 transition-all text-xs font-bold">?</button>
           </div>
 
           {/* Dimension list */}
