@@ -934,7 +934,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
           {/* ── Input bar ── */}
           <div className="shrink-0 px-4 py-3 border-t border-white/8">
-            <div className="flex items-center gap-2 bg-[#0a0a12] rounded-2xl px-4 py-2.5 border border-white/12 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+            <div className="flex items-center gap-2 bg-[#0a0a12] rounded-2xl px-4 py-2.5 border border-white/12 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all cursor-text" onClick={e => { const input = (e.currentTarget as HTMLElement).querySelector('input'); input?.focus(); }}>
               {/* Mic button */}
               <button
                 onClick={toggleMicrophone}
