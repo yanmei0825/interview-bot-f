@@ -56,7 +56,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const [isRecording, setIsRecording] = useState(false);
   const [botSpeaking, setBotSpeaking] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [botMessage, setBotMessage] = useState('');
   const [cameraOn, setCameraOn] = useState(false);
   const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
   const [deviceWarning, setDeviceWarning] = useState<'mic' | 'camera' | null>(null);
@@ -174,7 +173,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
           setPainLockDim(session.painLockDim ?? null);
           if (session.finished) { setFinished(true); finishedRef.current = true; }
           if (botReply.trim()) {
-            setBotMessage(botReply);
             setMessages(m => [...m, { role: 'bot', text: botReply, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }]);
             sendingRef.current = false;
             setLoading(false); loadingRef.current = false;
@@ -258,7 +256,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
 
       const replyToSpeak = botReply.trim() || (finishedRef.current ? OUTRO[language] : '');
       if (replyToSpeak) {
-        setBotMessage(replyToSpeak);
         setMessages(m => [...m, { role: 'bot', text: replyToSpeak, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
         sendingRef.current = false;
         setProcessing(false);
@@ -483,8 +480,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   useEffect(() => {
     if (introPlayedRef.current) return;
     introPlayedRef.current = true;
-
-    setBotMessage(INTRO[language]);
     setMessages([{ role: 'bot', text: INTRO[language], time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }]);
     window.speechSynthesis.cancel();
     speakText(INTRO[language]);
@@ -561,10 +556,29 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   };
 
   const handleExit = () => {
+    // Stop all ongoing operations immediately
     if (mediaRecorderRef.current) mediaRecorderRef.current.onstop = null;
-    stopTTSAudio();
+    sendingRef.current = true; // prevent any pending callbacks from firing
+    loadingRef.current = true;
+
+    // Kill TTS audio
+    window.speechSynthesis.cancel();
+    if (ttsSourceRef.current) {
+      try { ttsSourceRef.current.stop(); } catch {}
+      ttsSourceRef.current = null;
+    }
+    if (ttsAudioCtxRef.current) {
+      ttsAudioCtxRef.current.close().catch(() => {});
+      ttsAudioCtxRef.current = null;
+    }
+
+    // Kill recording
     stopRecording();
     camStreamRef.current?.getTracks().forEach(t => t.stop());
+
+    // Kill redirect timer
+    if (redirectTimerRef.current) { clearTimeout(redirectTimerRef.current); redirectTimerRef.current = null; }
+
     sessionStorage.removeItem("interview_token");
     window.location.href = '/';
   };
@@ -610,7 +624,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
         setFinished(false); finishedRef.current = false;
       }
       if (botReply.trim()) {
-        setBotMessage(botReply);
         setMessages(m => [...m, { role: 'bot', text: botReply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
         sendingRef.current = false; setLoading(false); loadingRef.current = false;
         await speakText(botReply);
@@ -1103,6 +1116,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     </div>
   );
 }
+
 
 
 
