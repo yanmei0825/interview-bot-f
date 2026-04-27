@@ -219,6 +219,24 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
       let userText = '__skip__';
       if (transcribeRes.ok) {
         const data = await transcribeRes.json();
+        if (data.wrongLanguage) {
+          // User spoke in wrong language — show warning, don't send
+          const wrongLangMsg = ({
+            en: '⚠️ Please speak in English.',
+            ru: '⚠️ Пожалуйста, говорите на русском.',
+            tr: '⚠️ Lütfen Türkçe konuşun.',
+          } as Record<string, string>)[language] ?? '⚠️ Wrong language detected.';
+          setMessages(m => {
+            const copy = [...m];
+            const idx = copy.map(x => x.text).lastIndexOf('…');
+            if (idx !== -1) copy[idx] = { role: 'bot', text: wrongLangMsg, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+            return copy;
+          });
+          setBotSpeaking(false); botSpeakingRef.current = false;
+          sendingRef.current = false; setLoading(false); loadingRef.current = false; setProcessing(false);
+          if (mode === 'voice') setTimeout(startListening, 800);
+          return;
+        }
         userText = (data.text ?? '').trim() || '__skip__';
       } else {
         console.warn('[Transcribe] server error:', transcribeRes.status, '— treating as skip');
