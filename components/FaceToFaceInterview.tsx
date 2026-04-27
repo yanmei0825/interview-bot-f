@@ -49,7 +49,7 @@ const OUTRO: Record<Language, string> = {
 };
 
 export default function FaceToFaceInterview({ token, language, initialDimension, mode }: Props) {
-  // voice mode: mic on by default; chat mode: mic off; hybrid: user chooses
+  // voice mode: mic on by default; chat/hybrid mode: mic off until user enables it
   const [microphoneEnabled, setMicrophoneEnabled] = useState(mode === 'voice');
   const [loading, setLoading] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -488,8 +488,8 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
     window.speechSynthesis.cancel();
     speakText(INTRO[language]);
 
-    // Auto-enable mic for voice and hybrid modes
-    if (mode === 'voice' || mode === 'hybrid') {
+    // Auto-enable mic for voice-only mode
+    if (mode === 'voice') {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(() => { micEnabledRef.current = true; })
         .catch(() => {});
