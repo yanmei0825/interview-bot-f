@@ -244,7 +244,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
 
       // If audio was substantial but transcription returned nothing — likely wrong language
       // (Whisper returns empty when forced to transcribe speech in a different language)
-      if (userText === '__skip__' && audioBlob.size > 5000) {
+      if (userText === '__skip__' && audioBlob.size > 2000) {
         const wrongLangWarning = ({
           en: '⚠️ Please speak in English.',
           ru: '⚠️ Пожалуйста, говорите на русском.',
