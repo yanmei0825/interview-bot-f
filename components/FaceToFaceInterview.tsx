@@ -213,7 +213,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
       const arrayBuffer = await audioBlob.arrayBuffer();
       const transcribeRes = await fetch(`${BACKEND_URL}/survey/${token}/voice/transcribe`, {
         method: 'POST',
-        headers: { 'Content-Type': 'audio/webm' },
+        headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
         body: arrayBuffer,
       });
 
