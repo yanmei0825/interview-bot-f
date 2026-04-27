@@ -409,15 +409,16 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
     if (finishedRef.current) {
       sessionStorage.removeItem("interview_token");
       // Keep listening for a continue_request for 15s before redirecting
-      if (micEnabledRef.current) setTimeout(startListening, 800);
+      if (micEnabledRef.current && mode === 'voice') setTimeout(startListening, 800);
       redirectTimerRef.current = setTimeout(() => {
         if (finishedRef.current) window.location.href = '/';
       }, 15000);
-    } else if (micEnabledRef.current) {
-      // Delay longer to let TTS audio fully clear from the mic input
+    } else if (micEnabledRef.current && mode === 'voice') {
+      // Voice-only mode: auto-start listening after bot speaks
       setTimeout(startListening, 800);
     }
-    // mic is off → user will type their answer manually, do nothing
+    // hybrid mode: mic is available but don't auto-start — user decides to speak or type
+    // chat mode: no mic, user types
   };
 
   const speakWithBrowser = (text: string, resolve: () => void) => {
