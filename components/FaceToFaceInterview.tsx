@@ -97,13 +97,14 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
   const manualStopRef = useRef(false); // true when mic toggled off manually — skip transcription
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<{ role: 'bot' | 'user'; text: string; time: string; audioUrl?: string }[]>([]);
 
   // sync state → refs
   useEffect(() => { loadingRef.current = loading; }, [loading]);
   useEffect(() => { finishedRef.current = finished; }, [finished]);
   useEffect(() => { botSpeakingRef.current = botSpeaking; }, [botSpeaking]);
   useEffect(() => { micEnabledRef.current = microphoneEnabled; }, [microphoneEnabled]);
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { messagesRef.current = messages; chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   // ─── cleanup helpers ────────────────────────────────────────────────────────
 
@@ -220,21 +221,23 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
       if (transcribeRes.ok) {
         const data = await transcribeRes.json();
         if (data.wrongLanguage) {
-          // User spoke in wrong language — show warning, don't send
+          // User spoke in wrong language — warn them and repeat the last bot question
           const wrongLangMsg = ({
             en: '⚠️ Please speak in English.',
             ru: '⚠️ Пожалуйста, говорите на русском.',
             tr: '⚠️ Lütfen Türkçe konuşun.',
           } as Record<string, string>)[language] ?? '⚠️ Wrong language detected.';
+          // Find the last bot question to repeat after the warning
+          const lastBotMsg = messagesRef.current.filter(m => m.role === 'bot').slice(-1)[0]?.text ?? '';
+          const fullWarning = lastBotMsg ? `${wrongLangMsg} ${lastBotMsg}` : wrongLangMsg;
           setMessages(m => {
             const copy = [...m];
             const idx = copy.map(x => x.text).lastIndexOf('…');
-            if (idx !== -1) copy[idx] = { role: 'bot', text: wrongLangMsg, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+            if (idx !== -1) copy[idx] = { role: 'bot', text: fullWarning, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             return copy;
           });
-          setBotSpeaking(false); botSpeakingRef.current = false;
           sendingRef.current = false; setLoading(false); loadingRef.current = false; setProcessing(false);
-          if (mode === 'voice') setTimeout(startListening, 800);
+          await speakText(fullWarning);
           return;
         }
         userText = (data.text ?? '').trim() || '__skip__';
@@ -242,25 +245,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
         console.warn('[Transcribe] server error:', transcribeRes.status, '— treating as skip');
       }
 
-      // If audio was substantial but transcription returned nothing — likely wrong language
-      // (Whisper returns empty when forced to transcribe speech in a different language)
-      if (userText === '__skip__' && audioBlob.size > 2000) {
-        const wrongLangWarning = ({
-          en: '⚠️ Please speak in English.',
-          ru: '⚠️ Пожалуйста, говорите на русском.',
-          tr: '⚠️ Lütfen Türkçe konuşun.',
-        } as Record<string, string>)[language] ?? '⚠️ Please speak in the selected language.';
-        setMessages(m => {
-          const copy = [...m];
-          const idx = copy.map(x => x.text).lastIndexOf(PLACEHOLDER);
-          if (idx !== -1) copy[idx] = { role: 'bot', text: wrongLangWarning, time: placeholderTime };
-          return copy;
-        });
-        setBotSpeaking(false); botSpeakingRef.current = false;
-        sendingRef.current = false; setLoading(false); loadingRef.current = false; setProcessing(false);
-        if (mode === 'voice') setTimeout(startListening, 800);
-        return;
-      }
+      // If transcription returned nothing, treat as skip (noise/unclear speech — not a language error)
 
       // Replace placeholder with real transcription, or keep a fallback
       if (userText !== '__skip__') {
