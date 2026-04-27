@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { DimensionKey, Language, SessionState, sendMessageStream, getSession, BACKEND_URL } from '../lib/api';
+import type { InterviewMode } from './ModeSelect';
 
 interface Props {
   token: string;
   language: Language;
   initialDimension: DimensionKey;
+  mode: InterviewMode;
 }
 
 // ─── VAD constants ────────────────────────────────────────────────────────────
@@ -46,7 +48,9 @@ const OUTRO: Record<Language, string> = {
   tr: "Hepsi bu kadar — zaman ayırdığın ve bu kadar açık paylaştığın için çok teşekkür ederim. Seninle konuşmak bir zevkti. Kendine iyi bak, güle güle!",
 };
 
-export default function FaceToFaceInterview({ token, language, initialDimension }: Props) {
+export default function FaceToFaceInterview({ token, language, initialDimension, mode }: Props) {
+  // voice mode: mic on by default; chat mode: mic off; hybrid: user chooses
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(mode === 'voice');
   const [loading, setLoading] = useState(false);
   const [finished, setFinished] = useState(false);
   const [currentDim, setCurrentDim] = useState<DimensionKey>(initialDimension);
@@ -57,7 +61,6 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
   const [botSpeaking, setBotSpeaking] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
-  const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
   const [deviceWarning, setDeviceWarning] = useState<'mic' | 'camera' | null>(null);
   const [textInput, setTextInput] = useState('');
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -483,6 +486,13 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     setMessages([{ role: 'bot', text: INTRO[language], time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }]);
     window.speechSynthesis.cancel();
     speakText(INTRO[language]);
+
+    // Auto-enable mic for voice and hybrid modes
+    if (mode === 'voice' || mode === 'hybrid') {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => { micEnabledRef.current = true; })
+        .catch(() => {});
+    }
 
     const stopAll = () => {
       stopTTSAudio();
@@ -935,29 +945,35 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
           {/* ── Input bar ── */}
           <div className="shrink-0 px-4 py-3 border-t border-white/8">
             <div className="flex items-center gap-2 bg-[#0a0a12] rounded-2xl px-4 py-2.5 border border-white/12 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all cursor-text" onClick={e => { const input = (e.currentTarget as HTMLElement).querySelector('input'); input?.focus(); }}>
-              {/* Mic button */}
-              <button
-                onClick={toggleMicrophone}
-                className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                  microphoneEnabled
-                    ? isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-indigo-600 text-white'
-                    : 'bg-white/12 text-white/40 hover:bg-gray-300'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  {microphoneEnabled
-                    ? <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.5 14.56 16 12 16s-4.52-1.5-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1.01 1.14.49 3.41 3.85 5.86 7.92 5.86s7.43-2.45 7.92-5.86c.08-.6-.4-1.14-1.01-1.14z"/>
-                    : <><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.5 14.56 16 12 16s-4.52-1.5-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1.01 1.14.49 3.41 3.85 5.86 7.92 5.86s7.43-2.45 7.92-5.86c.08-.6-.4-1.14-1.01-1.14z"/><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></>
-                  }
-                </svg>
-              </button>
-              {/* Waveform / placeholder */}
+              {/* Mic button — hidden in chat-only mode */}
+              {mode !== 'chat' && (
+                <button
+                  onClick={toggleMicrophone}
+                  className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                    microphoneEnabled
+                      ? isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-indigo-600 text-white'
+                      : 'bg-white/12 text-white/40 hover:bg-white/20'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    {microphoneEnabled
+                      ? <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.5 14.56 16 12 16s-4.52-1.5-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1.01 1.14.49 3.41 3.85 5.86 7.92 5.86s7.43-2.45 7.92-5.86c.08-.6-.4-1.14-1.01-1.14z"/>
+                      : <><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.5 14.56 16 12 16s-4.52-1.5-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1.01 1.14.49 3.41 3.85 5.86 7.92 5.86s7.43-2.45 7.92-5.86c.08-.6-.4-1.14-1.01-1.14z"/><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></>
+                    }
+                  </svg>
+                </button>
+              )}
+              {/* Waveform / text input */}
               {isRecording
                 ? <div className="flex-1 flex items-center gap-0.5 h-5 pointer-events-none">
                     {[12,6,14,8,16,5,13,9,15,7,11,6,14,8,16,5,13,9,15,7,11,6,14,8].map((h, i) => (
                       <div key={i} className="w-0.5 bg-indigo-400 rounded-full animate-pulse" style={{ height: `${h}px`, animationDelay: `${i * 0.05}s` }} />
                     ))}
                   </div>
+                : mode === 'voice'
+                ? <p className="flex-1 text-sm text-white/30 select-none">
+                    {({ en: 'Press the mic to speak', ru: 'Нажмите на микрофон, чтобы говорить', tr: 'Konuşmak için mikrofona basın' } as Record<Language,string>)[language]}
+                  </p>
                 : <input
                     type="text"
                     value={textInput}
@@ -967,14 +983,16 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
                     className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/30 outline-none cursor-text"
                   />
               }
-              {/* Send */}
-              <button
-                onClick={sendText}
-                disabled={!textInput.trim() || loading}
-                className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm"
-              >
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-              </button>
+              {/* Send — hidden in voice-only mode */}
+              {mode !== 'voice' && (
+                <button
+                  onClick={sendText}
+                  disabled={!textInput.trim() || loading}
+                  className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm"
+                >
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+              )}
             </div>
           </div>
           {/* ── end card ── */}
@@ -1116,6 +1134,7 @@ export default function FaceToFaceInterview({ token, language, initialDimension 
     </div>
   );
 }
+
 
 
 
