@@ -242,6 +242,26 @@ export default function FaceToFaceInterview({ token, language, initialDimension,
         console.warn('[Transcribe] server error:', transcribeRes.status, '— treating as skip');
       }
 
+      // If audio was substantial but transcription returned nothing — likely wrong language
+      // (Whisper returns empty when forced to transcribe speech in a different language)
+      if (userText === '__skip__' && audioBlob.size > 5000) {
+        const wrongLangWarning = ({
+          en: '⚠️ Please speak in English.',
+          ru: '⚠️ Пожалуйста, говорите на русском.',
+          tr: '⚠️ Lütfen Türkçe konuşun.',
+        } as Record<string, string>)[language] ?? '⚠️ Please speak in the selected language.';
+        setMessages(m => {
+          const copy = [...m];
+          const idx = copy.map(x => x.text).lastIndexOf(PLACEHOLDER);
+          if (idx !== -1) copy[idx] = { role: 'bot', text: wrongLangWarning, time: placeholderTime };
+          return copy;
+        });
+        setBotSpeaking(false); botSpeakingRef.current = false;
+        sendingRef.current = false; setLoading(false); loadingRef.current = false; setProcessing(false);
+        if (mode === 'voice') setTimeout(startListening, 800);
+        return;
+      }
+
       // Replace placeholder with real transcription, or keep a fallback
       if (userText !== '__skip__') {
         setMessages(m => {
